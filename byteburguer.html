@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ByteBurger</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            gap: 10px;
+        }
+        .products {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            margin: auto;
+            height: 100%;
+            gap: 5px;
+        }
+        .product-item{
+            background-color: #e3e3e3;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .product-item button {
+            font-size: 12px;
+            width: 100%;
+            text-align: center;
+            padding: 2px 5px;
+
+        }
+        .product-item input[type="number"] {
+            padding: 4px;
+            font-size: 20px;
+        }
+        button {
+            padding: 10px 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            font-size: 10px;
+            margin: 12px;
+            width: 94%;
+            text-align: center;
+            height: 62%;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .worker-monitor {
+            margin:auto;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            flex: 1;
+            width: 80%;
+            height:10px;
+        }
+        .worker-monitor h2 {
+            margin-top: 0;
+            font-size: 16px;
+        }
+        .worker-monitor ul {
+            list-style: none;
+            padding: 0;
+        }
+        .worker-monitor li {
+            margin-bottom: 8px;
+            padding: 6px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            font-size: 12px;
+        }
+        .worker-status {
+            display: flex;
+            justify-content: space-between;
+        }
+        .worker-status span {
+            font-weight: bold;
+        }
+
+        .orders {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); 
+    gap: 8px; 
+    width: 70%; 
+    margin: auto; 
+    padding: 20px; 
+}
+
+.order-item {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: relative;
+    max-width: 100%;
+    padding: 10px;
+}
+
+.order-item .delete-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: transparent;
+    color: #f00;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.order-item.pronto {
+    background-color: #c3e6cb; 
+    border-color: #c3e6cb;
+}
+
+.status {
+    background-color: #c3e6cb; 
+    color: #155724;
+    padding: 5px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+}
+
+.status i {
+    margin-right: 4px;
+}
+
+.progress {
+    margin-bottom: 8px;
+}
+
+
+        .prioridade-container {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+        .prioridade-container input[type="checkbox"] {
+            margin-right: 5px;
+            width: 30px;
+            height: 17px;
+        }
+        .prioridade-container label {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .buttons-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+.order-item button:hover {
+    color: darkred;
+}
+
+.order-item h3 {
+    margin: 0;
+}
+
+.order-item p {
+    margin: 0px;
+}
+
+.order-item ul {
+    list-style: none;
+    padding: 0;
+}
+
+.order-item ul li {
+    margin-bottom: 5px;
+}
+
+.alerta {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 8px;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            z-index: 1000;
+            font-size: 12px;
+        }
+
+        .worker-status {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .limpar {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: auto;
+            width: 30%;
+            height: 8%;
+        }
+        .limpar button {
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .limpar button:hover {
+            background-color: #0056b3;
+        }
+
+        #addOrder{
+            width: 28%;
+            margin: auto;
+            height: 5%;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        h1{
+            text-align: center;
+            font-size: 25px;
+        }
+
+        h2{
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgb(0,0,0); 
+    background-color: rgba(0,0,0,0.4); 
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; 
+    padding: 20px; 
+    border: 1px solid #888;
+    width: 80%; 
+}
+
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+
+#confirmButton {
+    background-color: #28a745;
+    color: #fff;
+}
+
+#cancelButton {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ByteBurger - Restaurante Digital</h1>
+        <h2>Abordagem II - Web Workers Generalistas</h2>
+        <br>
+        <div class="products">
+            <button data-product="Callback Burger">
+                Callback Burger
+                <input type="number" value="0" min="0" placeholder="Qtd">
+            </button>
+            <button data-product="Null-Burguer (veg)">
+                Null-Burguer (veg)
+                <input type="number" value="0" min="0" placeholder="Qtd">
+            </button>
+            <button data-product="Crispy Turing">
+                Crispy Turing
+                <input type="number" value="0" min="0" placeholder="Qtd">
+            </button>
+            <button data-product="Mongo Melt">
+                Mongo Melt
+                <input type="number" value="0" min="0" placeholder="Qtd">
+            </button>
+            <button data-product="Webwrap">
+                Webwrap
+                <input type="number" value="0" min="0" placeholder="Qtd">
+            </button>
+            <button data-product="NPM Nuggets">
+                NPM Nuggets
+                <input type="number" value="0" min="0" placeholder="Qtd">
+            </button>
+            <button data-product="Float Juice">
+                Float Juice
+                <input type="number" value="0" min="0" placeholder="Qtd">
+            </button>
+            <button data-product="Array Apple">
+                Array Apple
+                <input type="number" value="0" min="0" placeholder="Qtd">
+            </button>
+            <button data-product="Async Berry">
+                Async Berry
+                <input type="number" value="0" min="0" placeholder="Qtd">
+            </button>
+            <div class="prioridade-container">
+                <input type="checkbox" id="prioridade">
+                <label for="prioridade">Prioridade</label>
+            </div>
+        </div>
+        <button id="addOrder">Adicionar Pedido</button>
+        <div class="limpar">
+            <button id="clearOrders">Limpar Histórico</button> 
+            <button id="clearCompleted">Limpar Concluídos</button>
+        </div>
+        <div class="orders"></div>
+
+        <div class="worker-monitor">
+            <h2>Monitoramento dos Workers (demonstração -- contém pequeno atraso)</h2>
+            <ul id="workerStatus">
+            </ul>
+        </div>
+    </div>
+    <script src="byteburguer.js"></script>
+</body>
+</html>
