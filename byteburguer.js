@@ -11,9 +11,10 @@ const TEMPO_PRODUTOS = {
 };
 
 const MAX_QUANTIDADE = 15;
-const MAX_HAMBURGUERES_GRELHAR = 4;
-const MAX_INGREDIENTES_CORTE = 7;
-const MAX_BEBIDAS_PREPARAR = 1;
+const MAX_GRELHAR = 4; 
+const MAX_INGREDIENTES_CORTADOS = 7; 
+const MAX_BEBIDAS_PREPARADAS = 1;
+
 
 let pedidos = [];
 let proximoId = 1;
@@ -230,30 +231,60 @@ async function processarPedidos() {
         .filter(pedido => pedido.status === 'em espera')
         .sort((a, b) => b.prioridade - a.prioridade);
 
-    const tarefas = [];
+    const tarefas = {
+        cortar: [],
+        grelhar: [],
+        montar: [],
+        preparar: []
+    };
 
     pedidosPendentes.forEach(pedido => {
         pedido.produtos.forEach(produto => {
-            const produtoTarefas = Object.keys(TEMPO_PRODUTOS[produto.nome] || {});
-            produtoTarefas.forEach(tarefa => {
+            const acoesProduto = Object.keys(TEMPO_PRODUTOS[produto.nome] || {});
+            acoesProduto.forEach(acao => {
                 for (let i = 0; i < produto.quantidade; i++) {
-                    tarefas.push({ tarefa, tempo: TEMPO_PRODUTOS[produto.nome][tarefa], pedidoId: pedido.id });
+                    tarefas[acao].push({ produto, tempo: TEMPO_PRODUTOS[produto.nome][acao], pedidoId: pedido.id });
                 }
             });
         });
     });
 
+
+    const tarefasGrelhar = tarefas.grelhar.slice(0, MAX_GRELHAR);
+    const tarefasCortar = tarefas.cortar.slice(0, MAX_INGREDIENTES_CORTADOS);
+    const tarefasPreparar = tarefas.preparar.slice(0, MAX_BEBIDAS_PREPARADAS);
+    const tarefasMontar = tarefas.montar;
+
+    const todasTarefas = [
+        ...tarefasGrelhar.map(tarefa => ({ ...tarefa, acao: 'grelhar' })),
+        ...tarefasCortar.map(tarefa => ({ ...tarefa, acao: 'cortar' })),
+        ...tarefasPreparar.map(tarefa => ({ ...tarefa, acao: 'preparar Suco' })),
+        ...tarefasMontar.map(tarefa => ({ ...tarefa, acao: 'montar' }))
+    ];
+
+    for (const tarefa of todasTarefas) {
+        const worker = workers.find(w => !w.ocupado);
+        if (worker) {
+            await executarTarefa(worker, tarefa);
+        }
+    }
+
+    if (pedidos.some(pedido => pedido.status === 'em espera')) {
+        processarPedidos();
+    }
+}
+
 async function executarTarefa(worker, tarefa) {
     return new Promise(resolve => {
         worker.ocupado = true;
-        worker.tarefaAtual = tarefa.tarefa;
+        worker.tarefaAtual = tarefa.acao;
         worker.pedidoId = tarefa.pedidoId;
 
         atualizarMonitoramentoWorkers();
 
         const intervalo = setInterval(() => {
             const pedido = pedidos.find(p => p.id === tarefa.pedidoId);
-            
+
             if (!pedido || pedido.status === 'cancelado') {
                 clearInterval(intervalo);
                 worker.ocupado = false;
@@ -270,7 +301,7 @@ async function executarTarefa(worker, tarefa) {
             const pedido = pedidos.find(p => p.id === tarefa.pedidoId);
 
             if (pedido && pedido.status !== 'cancelado' && pedido.status !== 'pronto') {
-                pedido.progresso[tarefa.tarefa] += 100 / pedido.produtos.length;
+                pedido.progresso[tarefa.acao] += 100 / pedido.produtos.length;
                 pedido.tempoRestante -= tarefa.tempo;
                 if (verificarConclusaoPedido(pedido.id)) {
                     pedido.tempoRestante = 0;
@@ -281,22 +312,10 @@ async function executarTarefa(worker, tarefa) {
             worker.ocupado = false;
             worker.tarefaAtual = null;
             worker.pedidoId = null;
-            resolve();
             atualizarMonitoramentoWorkers();
+            resolve();
         }, tarefa.tempo * 1000);
     });
-}
-    
-    for (const tarefa of tarefas) {
-        const worker = workers.find(w => !w.ocupado);
-        if (worker) {
-            await executarTarefa(worker, tarefa);
-        }
-    }
-
-    if (pedidos.some(pedido => pedido.status === 'em espera')) {
-        processarPedidos();
-    }
 }
 
 
