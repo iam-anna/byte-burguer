@@ -1,3 +1,5 @@
+// Restaurante Digital  ByteBurger - Web Workers Generalistas (Abordagem II) - Kauê
+
 const TEMPO_PRODUTOS = {
     "Callback Burger": { cortar: 3, grelhar: 8, montar: 2 },
     "Null-Burguer (veg)": { cortar: 4, grelhar: 7, montar: 2 },
@@ -14,7 +16,6 @@ const MAX_QUANTIDADE = 15;
 const MAX_GRELHAR = 4; 
 const MAX_INGREDIENTES_CORTADOS = 7; 
 const MAX_BEBIDAS_PREPARADAS = 1;
-
 
 let pedidos = [];
 let proximoId = 1;
@@ -137,9 +138,6 @@ function verificarConclusaoPedido(pedidoId) {
     return pedido.status === 'pronto';
 }
 
-
-
-
 function atualizarInterface() {
     const ordersContainer = document.querySelector('.orders');
     ordersContainer.innerHTML = '';
@@ -161,8 +159,7 @@ function atualizarInterface() {
             <button class="delete-btn" onclick="cancelarPedido(${pedido.id})">X</button>
             ${pedido.status === 'pronto' ? '<div class="status"><i class="fas fa-check-circle"></i> <strong>Concluído</strong></div>' : ''}
             <p>Tempo Estimado: ${formatarTempo(pedido.tempoEstimado)}</p>
-            ${pedido.prioridade ? '<p>- <u>Alta Prioridade</u></p>' : ''}
-        `;
+            ${pedido.prioridade ? '<p>- <u>Alta Prioridade</u></p>' : ''}`;
 
         const progress = document.createElement('div');
         progress.className = 'progress';
@@ -173,8 +170,7 @@ function atualizarInterface() {
                 <div class="progress-task ${tarefaClass}">
                     <p><strong>${capitalizeFirstLetter(acao)}</strong></p>
                     ${progresso >= 100 ? '<span class="checkmark">&#10003;</span>' : ''}
-                </div>
-            `;
+                </div>`;
         });
 
         const produtos = document.createElement('div');
@@ -182,8 +178,7 @@ function atualizarInterface() {
             <div>Produtos:</div>
             <ul>
                 ${pedido.produtos.map(p => `<li>${p.nome} - ${p.quantidade} unidade(s)</li>`).join('')}
-            </ul>
-        `;
+            </ul>`;
 
         card.appendChild(header);
         card.appendChild(progress);
@@ -194,10 +189,49 @@ function atualizarInterface() {
     atualizarMonitoramentoWorkers();
 }
 
+async function executarTarefa(worker, tarefa) {
+    return new Promise(resolve => {
+        worker.ocupado = true;
+        worker.tarefaAtual = tarefa.acao;
+        worker.pedidoId = tarefa.pedidoId;
 
+        atualizarMonitoramentoWorkers();
 
+        const intervalo = setInterval(() => {
+            const pedido = pedidos.find(p => p.id === tarefa.pedidoId);
 
+            if (!pedido || pedido.status === 'cancelado') {
+                clearInterval(intervalo);
+                worker.ocupado = false;
+                worker.tarefaAtual = null;
+                worker.pedidoId = null;
+                atualizarMonitoramentoWorkers();
+                resolve();
+                return;
+            }
+        }, 100);
 
+        setTimeout(() => {
+            clearInterval(intervalo);
+            const pedido = pedidos.find(p => p.id === tarefa.pedidoId);
+
+            if (pedido && pedido.status !== 'cancelado' && pedido.status !== 'pronto') {
+                pedido.progresso[tarefa.acao] += 100 / pedido.produtos.length;
+                pedido.tempoRestante -= tarefa.tempo;
+                if (verificarConclusaoPedido(pedido.id)) {
+                    pedido.tempoRestante = 0;
+                }
+                atualizarInterface();
+            }
+
+            worker.ocupado = false;
+            worker.tarefaAtual = null;
+            worker.pedidoId = null;
+            atualizarMonitoramentoWorkers();
+            resolve();
+        }, tarefa.tempo * 1000);
+    });
+}
 
 function resetarFormulario() {
     document.querySelectorAll('.products button input').forEach(input => input.value = '0');
@@ -249,7 +283,6 @@ async function processarPedidos() {
         });
     });
 
-
     const tarefasGrelhar = tarefas.grelhar.slice(0, MAX_GRELHAR);
     const tarefasCortar = tarefas.cortar.slice(0, MAX_INGREDIENTES_CORTADOS);
     const tarefasPreparar = tarefas.preparar.slice(0, MAX_BEBIDAS_PREPARADAS);
@@ -258,7 +291,7 @@ async function processarPedidos() {
     const todasTarefas = [
         ...tarefasGrelhar.map(tarefa => ({ ...tarefa, acao: 'grelhar' })),
         ...tarefasCortar.map(tarefa => ({ ...tarefa, acao: 'cortar' })),
-        ...tarefasPreparar.map(tarefa => ({ ...tarefa, acao: 'preparar Suco' })),
+        ...tarefasPreparar.map(tarefa => ({ ...tarefa, acao: 'preparar' })),
         ...tarefasMontar.map(tarefa => ({ ...tarefa, acao: 'montar' }))
     ];
 
@@ -273,51 +306,6 @@ async function processarPedidos() {
         processarPedidos();
     }
 }
-
-async function executarTarefa(worker, tarefa) {
-    return new Promise(resolve => {
-        worker.ocupado = true;
-        worker.tarefaAtual = tarefa.acao;
-        worker.pedidoId = tarefa.pedidoId;
-
-        atualizarMonitoramentoWorkers();
-
-        const intervalo = setInterval(() => {
-            const pedido = pedidos.find(p => p.id === tarefa.pedidoId);
-
-            if (!pedido || pedido.status === 'cancelado') {
-                clearInterval(intervalo);
-                worker.ocupado = false;
-                worker.tarefaAtual = null;
-                worker.pedidoId = null;
-                atualizarMonitoramentoWorkers();
-                resolve(); 
-                return;
-            }
-        }, 100); 
-
-        setTimeout(() => {
-            clearInterval(intervalo);
-            const pedido = pedidos.find(p => p.id === tarefa.pedidoId);
-
-            if (pedido && pedido.status !== 'cancelado' && pedido.status !== 'pronto') {
-                pedido.progresso[tarefa.acao] += 100 / pedido.produtos.length;
-                pedido.tempoRestante -= tarefa.tempo;
-                if (verificarConclusaoPedido(pedido.id)) {
-                    pedido.tempoRestante = 0;
-                }
-                atualizarInterface();
-            }
-
-            worker.ocupado = false;
-            worker.tarefaAtual = null;
-            worker.pedidoId = null;
-            atualizarMonitoramentoWorkers();
-            resolve();
-        }, tarefa.tempo * 1000);
-    });
-}
-
 
 function limparHistorico() {
     pedidos = [];
@@ -358,7 +346,6 @@ function fecharModal() {
     pedidoParaExcluir = null; 
 }
 
-
 function confirmarExclusao() {
     if (pedidoParaExcluir !== null) {
         pedidos = pedidos.filter(p => p.id !== pedidoParaExcluir);
@@ -373,7 +360,6 @@ function confirmarExclusao() {
     }
     fecharModal();
 }
-
 
 function mostrarConfirmacao(mensagem, idPedido) {
     return new Promise((resolve) => {
