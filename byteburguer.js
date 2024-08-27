@@ -1,6 +1,6 @@
 // Restaurante Digital  ByteBurger - Web Workers Generalistas (Abordagem II) - Kauê
 
-const TEMPO_PRODUTOS = {
+const tempoProduto = {
     "Callback Burger": { cortar: 3, grelhar: 8, montar: 2 },
     "Null-Burguer (veg)": { cortar: 4, grelhar: 7, montar: 2 },
     "Crispy Turing": { cortar: 2, grelhar: 10, montar: 1 },
@@ -12,10 +12,10 @@ const TEMPO_PRODUTOS = {
     "Async Berry": { cortar: 2, preparar: 2 }
 };
 
-const MAX_QUANTIDADE = 15;
-const MAX_GRELHAR = 4; 
-const MAX_INGREDIENTES_CORTADOS = 7; 
-const MAX_BEBIDAS_PREPARADAS = 1;
+const quantidadeMax = 15;
+const grelharMax = 4; 
+const ingredienteMax = 7; 
+const bebidaMax = 1;
 
 let pedidos = [];
 let proximoId = 1;
@@ -37,9 +37,9 @@ document.querySelectorAll('.products button input').forEach(input => {
 function validarQuantidade(event) {
     const input = event.target;
     const quantidade = parseInt(input.value) || 0;
-    if (quantidade > MAX_QUANTIDADE) {
-        input.value = MAX_QUANTIDADE;
-        mostrarAlerta(`A quantidade máxima permitida para ${input.parentElement.getAttribute('data-product')} é ${MAX_QUANTIDADE}.`);
+    if (quantidade > quantidadeMax) {
+        input.value = quantidadeMax;
+        mostrarAlerta(`A quantidade máxima permitida para ${input.parentElement.getAttribute('data-product')} é ${quantidadeMax}.`);
     }
 }
 
@@ -61,8 +61,8 @@ function criarPedido() {
         .filter(produto => produto.quantidade > 0);
 
     for (const produto of produtos) {
-        if (produto.quantidade > MAX_QUANTIDADE) {
-            mostrarAlerta(`A quantidade máxima permitida para ${produto.nome} é ${MAX_QUANTIDADE}.`);
+        if (produto.quantidade > quantidadeMax) {
+            mostrarAlerta(`A quantidade máxima permitida para ${produto.nome} é ${quantidadeMax}.`);
             return;
         }
     }
@@ -100,7 +100,7 @@ function criarPedido() {
 function calcularTempoEstimado(produtos) {
     let tempoTotal = 0;
     produtos.forEach(produto => {
-        const tempos = TEMPO_PRODUTOS[produto.nome];
+        const tempos = tempoProduto[produto.nome];
         if (tempos) {
             if (tempos.cortar) tempoTotal += tempos.cortar * produto.quantidade;
             if (tempos.grelhar) tempoTotal += tempos.grelhar * produto.quantidade;
@@ -125,12 +125,12 @@ function verificarConclusaoPedido(pedidoId) {
     const pedido = pedidos.find(p => p.id === pedidoId);
     if (!pedido) return false;
 
-    const todasAsTarefasConcluidas = pedido.produtos.every(produto => {
-        const acoesProduto = Object.keys(TEMPO_PRODUTOS[produto.nome] || {});
+    const todasTarefasConcluidas = pedido.produtos.every(produto => {
+        const acoesProduto = Object.keys(tempoProduto[produto.nome] || {});
         return acoesProduto.every(acao => pedido.progresso[acao] >= 100);
     });
 
-    if (todasAsTarefasConcluidas) {
+    if (todasTarefasConcluidas) {
         pedido.status = 'pronto';
         pedido.tempoRestante = 0;
     }
@@ -146,10 +146,10 @@ function atualizarInterface() {
         const card = document.createElement('div');
         card.className = `order-item ${pedido.status}`;
 
-        const todasAsAcoes = new Set();
+        const todasAcoes = new Set();
         pedido.produtos.forEach(produto => {
-            const acoesProduto = Object.keys(TEMPO_PRODUTOS[produto.nome] || {});
-            acoesProduto.forEach(acao => todasAsAcoes.add(acao));
+            const acoesProduto = Object.keys(tempoProduto[produto.nome] || {});
+            acoesProduto.forEach(acao => todasAcoes.add(acao));
         });
 
         const header = document.createElement('div');
@@ -163,7 +163,7 @@ function atualizarInterface() {
 
         const progress = document.createElement('div');
         progress.className = 'progress';
-        todasAsAcoes.forEach(acao => {
+        todasAcoes.forEach(acao => {
             const progresso = pedido.progresso[acao] || 0;
             const tarefaClass = progresso >= 100 ? 'complete' : '';
             progress.innerHTML += `
@@ -274,18 +274,18 @@ async function processarPedidos() {
 
     pedidosPendentes.forEach(pedido => {
         pedido.produtos.forEach(produto => {
-            const acoesProduto = Object.keys(TEMPO_PRODUTOS[produto.nome] || {});
+            const acoesProduto = Object.keys(tempoProduto[produto.nome] || {});
             acoesProduto.forEach(acao => {
                 for (let i = 0; i < produto.quantidade; i++) {
-                    tarefas[acao].push({ produto, tempo: TEMPO_PRODUTOS[produto.nome][acao], pedidoId: pedido.id });
+                    tarefas[acao].push({ produto, tempo: tempoProduto[produto.nome][acao], pedidoId: pedido.id });
                 }
             });
         });
     });
 
-    const tarefasGrelhar = tarefas.grelhar.slice(0, MAX_GRELHAR);
-    const tarefasCortar = tarefas.cortar.slice(0, MAX_INGREDIENTES_CORTADOS);
-    const tarefasPreparar = tarefas.preparar.slice(0, MAX_BEBIDAS_PREPARADAS);
+    const tarefasGrelhar = tarefas.grelhar.slice(0, grelharMax);
+    const tarefasCortar = tarefas.cortar.slice(0, ingredienteMax);
+    const tarefasPreparar = tarefas.preparar.slice(0, bebidaMax);
     const tarefasMontar = tarefas.montar;
 
     const todasTarefas = [
