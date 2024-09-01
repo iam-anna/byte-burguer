@@ -310,78 +310,73 @@ function cancelarPedido(idPedido) {
 
 
 async function processarPedidos() {
-        const pedidosPendentes = pedidos
-            .filter(pedido => pedido.status === 'em espera')
-            .sort((a, b) => b.prioridade - a.prioridade);
+    const pedidosPendentes = pedidos
+        .filter(pedido => pedido.status === 'em espera')
+        .sort((a, b) => b.prioridade - a.prioridade);
 
-        const tarefas = {
-            cortar: [],
-            grelhar: [],
-            montar: [],
-            preparar: []
-        };
+    const tarefas = {
+        cortar: [],
+        grelhar: [],
+        montar: [],
+        preparar: []
+    };
 
-        pedidosPendentes.forEach(pedido => {
-            pedido.produtos.forEach(produto => {
-                const acoesProduto = Object.keys(tempoProduto[produto.nome] || {});
-                acoesProduto.forEach(acao => {
-                    if (acao === 'grelhar' && grelhando >= grelharMax) return;
-                    if (acao === 'cortar' && cortando >= ingredienteMax) return;
-                    if (acao === 'preparar' && preparandoBebidas >= bebidaMax) return;
-                    for (let i = 0; i < produto.quantidade; i++) {
-                        tarefas[acao].push({ produto, tempo: tempoProduto[produto.nome][acao], pedidoId: pedido.id, acao });
-                    }
-                });
+    pedidosPendentes.forEach(pedido => {
+        pedido.produtos.forEach(produto => {
+            const acoesProduto = Object.keys(tempoProduto[produto.nome] || {});
+            acoesProduto.forEach(acao => {
+                if (acao === 'grelhar' && grelhando >= grelharMax) return;
+                if (acao === 'cortar' && cortando >= ingredienteMax) return;
+                if (acao === 'preparar' && preparandoBebidas >= bebidaMax) return;
+                for (let i = 0; i < produto.quantidade; i++) {
+                    tarefas[acao].push({ produto, tempo: tempoProduto[produto.nome][acao], pedidoId: pedido.id, acao });
+                }
             });
         });
+    });
 
-        for (const tipo in tarefas) {
-            tarefas[tipo] = tarefas[tipo].filter(tarefa => 
-                !pedidos.some(pedido => pedido.id === tarefa.pedidoId && (pedido.status === 'cancelado' || pedido.status === 'pronto'))
-            );
+    for (const tipo in tarefas) {
+        tarefas[tipo] = tarefas[tipo].filter(tarefa => 
+            !pedidos.some(pedido => pedido.id === tarefa.pedidoId && (pedido.status === 'cancelado' || pedido.status === 'pronto'))
+        );
+    }
+
+    const todasTarefas = [
+        ...tarefas.grelhar,
+        ...tarefas.cortar,
+        ...tarefas.preparar,
+        ...tarefas.montar
+    ];
+
+    const tarefasPorTipo = {
+        cortar: Math.min(todasTarefas.filter(tarefa => tarefa.acao === 'cortar').length, ingredienteMax),
+        grelhar: Math.min(todasTarefas.filter(tarefa => tarefa.acao === 'grelhar').length, grelharMax),
+        montar: Math.min(todasTarefas.filter(tarefa => tarefa.acao === 'montar').length, ingredienteMax),
+        preparar: Math.min(todasTarefas.filter(tarefa => tarefa.acao === 'preparar').length, bebidaMax)
+    };
+
+    let prepararEmAndamento = 0;
+
+    for (const tarefa of todasTarefas) {
+        if (tarefasPorTipo[tarefa.acao] <= 0) {
+            continue;
         }
-
-        const todasTarefas = [
-            ...tarefas.grelhar,
-            ...tarefas.cortar,
-            ...tarefas.preparar,
-            ...tarefas.montar
-        ];
-
-        const tarefasPorTipo = {
-            cortar: Math.min(todasTarefas.filter(tarefa => tarefa.acao === 'cortar').length, quantidadeMax),
-            grelhar: Math.min(todasTarefas.filter(tarefa => tarefa.acao === 'grelhar').length, grelharMax),
-            montar: Math.min(todasTarefas.filter(tarefa => tarefa.acao === 'montar').length, ingredienteMax),
-            preparar: Math.min(todasTarefas.filter(tarefa => tarefa.acao === 'preparar').length, bebidaMax)
-        };
-
-        let prepararEmAndamento = 0;
-
-        for (const tarefa of todasTarefas) {
-            if (tarefasPorTipo[tarefa.acao] <= 0) {
-                continue;
-            }
-
-            if (tarefa.acao === 'preparar' && prepararEmAndamento >= bebidaMax) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                return processarPedidos();
-            }
-
-            const worker = workers.find(w => !w.ocupado);
-            if (worker) {
-                await executarTarefa(worker, tarefa);
-                
-                if (tarefa.acao === 'preparar') {
-                    prepararEmAndamento++;
-                }
-                
-                tarefasPorTipo[tarefa.acao]--;
-            }
+        if (tarefa.acao === 'preparar' && prepararEmAndamento >= bebidaMax) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return processarPedidos(); 
         }
-
-        if (pedidosPendentes.length > 0) {
-            processarPedidos();
+        const worker = workers.find(w => !w.ocupado);
+        if (worker) {
+            await executarTarefa(worker, tarefa);
+            if (tarefa.acao === 'preparar') {
+                prepararEmAndamento++;
+            }
+            tarefasPorTipo[tarefa.acao]--;
         }
+    }
+    if (pedidosPendentes.length > 0) {
+        processarPedidos();
+    }
 }
 
 
