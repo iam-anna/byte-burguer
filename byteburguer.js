@@ -1,4 +1,4 @@
-// Restaurante Digital  ByteBurger - Web Workers Generalistas (Abordagem II) - Kauê
+// Restaurante Digital  ByteBurger - Web Workers Generalistas (Abordagem II) - Kauê Nota 10 - Daniel :)
  
 const tempoProduto = {
     "Callback Burger": { cortar: 3, grelhar: 8, montar: 2 },
@@ -104,28 +104,73 @@ function criarPedido() {
 
 
 function calcularTempoEstimado(produtos) {
-        let tempoTotal = 0;
-        produtos.forEach(produto => {
+    let tempoTotal = 0;
+    let filaGrelharPrioritaria = 0;
+    let filaCortarPrioritaria = 0;
+    let filaMontarPrioritaria = 0;
+    let filaPrepararPrioritaria = 0;
+
+    let filaGrelharNormal = 0;
+    let filaCortarNormal = 0;
+    let filaMontarNormal = 0;
+    let filaPrepararNormal = 0;
+
+    pedidos.forEach(pedido => {
+        if (pedido.status === 'pronto' || pedido.status === 'cancelado') return;
+
+        pedido.produtos.forEach(produto => {
             const tempos = tempoProduto[produto.nome];
             if (tempos) {
-                if (tempos.cortar) tempoTotal += tempos.cortar * produto.quantidade;
-                if (tempos.grelhar) tempoTotal += tempos.grelhar * produto.quantidade;
-                if (tempos.montar) tempoTotal += tempos.montar * produto.quantidade;
-                if (tempos.preparar) tempoTotal += tempos.preparar * produto.quantidade;
+                if (pedido.prioridade) {
+                    filaCortarPrioritaria += tempos.cortar ? tempos.cortar * produto.quantidade : 0;
+                    filaGrelharPrioritaria += tempos.grelhar ? tempos.grelhar * produto.quantidade : 0;
+                    filaMontarPrioritaria += tempos.montar ? tempos.montar * produto.quantidade : 0;
+                    filaPrepararPrioritaria += tempos.preparar ? tempos.preparar * produto.quantidade : 0;
+                } else {
+                    filaCortarNormal += tempos.cortar ? tempos.cortar * produto.quantidade : 0;
+                    filaGrelharNormal += tempos.grelhar ? tempos.grelhar * produto.quantidade : 0;
+                    filaMontarNormal += tempos.montar ? tempos.montar * produto.quantidade : 0;
+                    filaPrepararNormal += tempos.preparar ? tempos.preparar * produto.quantidade : 0;
+                }
             }
         });
-        return tempoTotal;
+    });
+
+    produtos.forEach(produto => {
+        const tempos = tempoProduto[produto.nome];
+        if (tempos) {
+            if (tempos.cortar) {
+                const tempoEsperaCorte = (filaCortarPrioritaria / ingredienteMax) + (filaCortarNormal / ingredienteMax);
+                tempoTotal += tempoEsperaCorte + (tempos.cortar * produto.quantidade);
+            }
+            if (tempos.grelhar) {
+                const tempoEsperaGrelhar = (filaGrelharPrioritaria / grelharMax) + (filaGrelharNormal / grelharMax);
+                tempoTotal += tempoEsperaGrelhar + (tempos.grelhar * produto.quantidade);
+            }
+            if (tempos.montar) {
+                const tempoEsperaMontar = (filaMontarPrioritaria / ingredienteMax) + (filaMontarNormal / ingredienteMax);
+                tempoTotal += tempoEsperaMontar + (tempos.montar * produto.quantidade);
+            }
+            if (tempos.preparar) {
+                const tempoEsperaPreparar = (filaPrepararPrioritaria / bebidaMax) + (filaPrepararNormal / bebidaMax);
+                tempoTotal += tempoEsperaPreparar + (tempos.preparar * produto.quantidade);
+            }
+        }
+    });
+
+    return tempoTotal;
 }
 
 
 function formatarTempo(tempoEmSegundos) {
-        if (tempoEmSegundos < 60) {
-            return `${tempoEmSegundos} segundos`;
-        } else {
-            const minutos = Math.floor(tempoEmSegundos / 60);
-            const segundos = tempoEmSegundos % 60;
-            return `${minutos} minuto(s) ${segundos} segundo(s)`;
-        }
+    const minutos = Math.floor(tempoEmSegundos / 60);  // Calcula os minutos inteiros
+    const segundos = Math.ceil(tempoEmSegundos % 60);  // Arredonda os segundos restantes para cima
+
+    if (minutos > 0) {
+        return `${minutos} minuto(s) e ${segundos} segundo(s)`;
+    } else {
+        return `${segundos} segundo(s)`;
+    }
 }
 
 
@@ -169,7 +214,7 @@ function atualizarInterface() {
                 <h3>Pedido #${pedido.id}</h3>
                 <button class="delete-btn" onclick="cancelarPedido(${pedido.id})">X</button>
                 ${pedido.status === 'pronto' ? '<div class="status"><i class="fas fa-check-circle"></i> <strong>Concluído</strong></div>' : ''}
-                <p>Tempo Estimado: ${formatarTempo(pedido.tempoEstimado)} (a partir do início da execução)</p>
+                <p>Tempo Estimado: ${formatarTempo(pedido.tempoEstimado)}</p>
                 ${pedido.prioridade ? '<p>- <u>Alta Prioridade</u></p>' : ''}`;
 
             const progress = document.createElement('div');
