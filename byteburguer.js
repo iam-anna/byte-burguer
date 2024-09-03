@@ -163,13 +163,12 @@ function calcularTempoEstimado(produtos) {
 
 function formatarTempo(tempoEmSegundos) {
     const minutos = Math.floor(tempoEmSegundos / 60);
-    let segundos = tempoEmSegundos % 60;
-    segundos = Math.ceil((segundos + Number.EPSILON) * 100) / 100;
+    const segundos = Math.ceil(tempoEmSegundos % 60);
 
     if (minutos > 0) {
-        return `${minutos} minuto(s) e ${segundos.toFixed(2)} segundo(s)`;
+        return `${minutos} minuto(s) e ${segundos} segundo(s)`;
     } else {
-        return `${segundos.toFixed(2)} segundo(s)`;
+        return `${segundos} segundo(s)`;
     }
 }
 
