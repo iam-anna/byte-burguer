@@ -1,4 +1,4 @@
-// Restaurante Digital  ByteBurger - Web Workers Generalistas (Abordagem II) - Kauê Nota 10 - Daniel :)
+// Restaurante Digital  ByteBurger - Web Workers Generalistas (Abordagem II) - Kauê
  
 const tempoProduto = {
     "Callback Burger": { cortar: 3, grelhar: 8, montar: 2 },
@@ -135,7 +135,6 @@ function calcularTempoEstimado(produtos) {
             }
         });
     });
-
     produtos.forEach(produto => {
         const tempos = tempoProduto[produto.nome];
         if (tempos) {
@@ -163,13 +162,14 @@ function calcularTempoEstimado(produtos) {
 
 
 function formatarTempo(tempoEmSegundos) {
-    const minutos = Math.floor(tempoEmSegundos / 60);  // Calcula os minutos inteiros
-    const segundos = Math.ceil(tempoEmSegundos % 60);  // Arredonda os segundos restantes para cima
+    const minutos = Math.floor(tempoEmSegundos / 60);
+    let segundos = tempoEmSegundos % 60;
+    segundos = Math.ceil((segundos + Number.EPSILON) * 100) / 100;
 
     if (minutos > 0) {
-        return `${minutos} minuto(s) e ${segundos} segundo(s)`;
+        return `${minutos} minuto(s) e ${segundos.toFixed(2)} segundo(s)`;
     } else {
-        return `${segundos} segundo(s)`;
+        return `${segundos.toFixed(2)} segundo(s)`;
     }
 }
 
@@ -214,7 +214,7 @@ function atualizarInterface() {
                 <h3>Pedido #${pedido.id}</h3>
                 <button class="delete-btn" onclick="cancelarPedido(${pedido.id})">X</button>
                 ${pedido.status === 'pronto' ? '<div class="status"><i class="fas fa-check-circle"></i> <strong>Concluído</strong></div>' : ''}
-                <p>Tempo Estimado: ${formatarTempo(pedido.tempoEstimado)}</p>
+                <p>Tempo Estimado: ${formatarTempo(pedido.tempoEstimado)} (a partir do início da execução)</p>
                 ${pedido.prioridade ? '<p>- <u>Alta Prioridade</u></p>' : ''}`;
 
             const progress = document.createElement('div');
